@@ -1,0 +1,13 @@
+=== git help <command> ===
+git init
+git add
+git pull
+git push
+git commit
+git branch
+git checkout
+git merge
+git rebase
+=== Interesting commands ===
+git commit -am "message"
+git push -u origin master
