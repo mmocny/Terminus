@@ -1,0 +1,17 @@
+ard:
+	Arduino specific libraries and helpers.
+
+base:
+	C++ specific libraries and helpers.
+
+samples:
+	Project examples, Makefile examples, etc.
+
+sandbox:
+	For experimentation.
+
+src:
+	Serious business.
+
+test:
+	Tests for src.
