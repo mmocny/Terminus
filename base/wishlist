@@ -1,0 +1,7 @@
+- threads
+-- thread + post task
+-- thread pool + post task
+- ipc
+-- channels
+- functional
+-- map, reduce, etc
