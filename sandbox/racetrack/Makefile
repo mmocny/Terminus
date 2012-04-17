@@ -1,8 +1,16 @@
+UNAME=$(shell uname)
+
+ifeq (${UNAME},Darwin)
+  BUILD=buildclang
+else
+  BUILD=buildgcc
+endif
+
 .PHONY: all
 
 all: build run
 
-build: buildgcc
+build: ${BUILD}
 
 buildgcc:
 	g++ -std=c++0x -Wall -Wextra main.cc -o main
