@@ -82,26 +82,32 @@ void sleep(int ms)
 ////////////////////////////////////////////////////////////////////////////////
 
 // Car class
-// used to track information about cars, currently very trivial
 class Car {
 public:
-  // this is a constructor, defined later
-  Car(int number, int speed);
+  Car(int number, int acceleration);
 
-  // these are just member functions, defined inline
   int number() const { return number_; }
-  int speedInKmph() const { return speedInKmph_; }
+  int speedInKmphAtTimeInMs(int ms) const;
+  int distanceTraveledAtTimeInMs(int ms) const;
 
 private:
-  // these are member variables aka fields
   int number_;
-  int speedInKmph_;
+  int acceleration_; // m/s^2
 };
 
-// this is the constructor definition, define outside
-Car::Car(int number, int speed)
-  : number_(number), speedInKmph_(speed) // <-- this is field initialization syntax, optional, but prefered way
+Car::Car(int number, int acceleration)
+  : number_(number), acceleration_(acceleration)
 {
+}
+
+int Car::speedInKmphAtTimeInMs(int ms) const
+{
+  return acceleration_ * (double(ms) / 1000);
+}
+
+int Car::distanceTraveledAtTimeInMs(int ms) const
+{
+  return 0.5 * acceleration_ * std::pow(double(ms)/1000, 2);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -123,20 +129,16 @@ RaceTrack::RaceTrack(int distance, std::vector<Car> cars)
 
 }
 
-// This is the only complicated function in this program
-// It will print the state of the racetrack at some given time
-// If you call this function with a fixed frequency and constant time increments, you will see a nice animation
 bool RaceTrack::paintAtTime(int ms) {
   const int racetrackWidth = 60;
   int winner = -1;
 
-  // Setting animation
   std::cout << "Time: " << ms/1000 << std::endl;
   std::cout << std::string(racetrackWidth, '*') << std::endl;
 
   for (Car const& car : cars_) {
-    int speed = car.speedInKmph();
-    int distance = (((speed * 1000) * ms) / 3600000);
+    int speed = car.speedInKmphAtTimeInMs(ms);
+    int distance = car.distanceTraveledAtTimeInMs(ms);
     float asPercent = std::min(1.0f, float(distance)/distanceInM_);
     int leadingSpaces = (racetrackWidth - 1) * asPercent;
     int trailingSpaces = racetrackWidth - leadingSpaces - 1;
@@ -146,10 +148,8 @@ bool RaceTrack::paintAtTime(int ms) {
       winner = car.number();
   }
   
-  // Finish animation
   std::cout << std::string(racetrackWidth, '*') << std::endl;
 
-  // Check if we have a winner
   bool finished = winner != -1;
   if (finished)
     std::cout << "FINISHED! Car " << winner << " wins! Average speed: " << ((distanceInM_ * 3600) / ms) << " kmph"<< std::endl;
@@ -160,15 +160,8 @@ bool RaceTrack::paintAtTime(int ms) {
 
 class Timer {
 public:
-  // std::function<> is a new feature that lets you store a reference to a function
-  // so that you can pass it around and call it later.
-  // in this case, we want to call some function every time the timer ticks.
-  // the function is a bool(int) because accepts an int (time in ms) and returns a bool (finished)
-  // when callback returns that it is finished (returns true), timer should stop ticking
   Timer(int interval, std::function<bool(int)> callback);
 
-  // this is synchronous, which means your program will not return out of this function until it finishes.
-  // if your callback never returns true, this will never return.
   void startSynchronous();
 
 private:
@@ -184,8 +177,6 @@ Timer::Timer(int interval, std::function<bool(int)> callback)
 
 void Timer::startSynchronous()
 {
-  // always start time at 0
-  // time values are in ms, and it ticks in intervals provided in the constructor
   for(int currentTime = 0; ; currentTime += intervalInMs_) {
     bool done = callback_(currentTime);
     if (done)
@@ -197,11 +188,8 @@ void Timer::startSynchronous()
 ////////////////////////////////////////////////////////////////////////////////
 
 int main() {
-  // This is a very confusing way of creating a random number generator between 80 and 180.
-  // Just ignore it, I can explain later.
-  auto rand = std::bind(std::uniform_int_distribution<int>(80, 180), std::mt19937(std::random_device()()));
+  auto rand = std::bind(std::uniform_int_distribution<int>(2, 10), std::mt19937(std::random_device()()));
 
-  // Create 9 cars with random speeds
   std::vector<Car> cars;
   cars.push_back(Car(1, rand()));
   cars.push_back(Car(2, rand()));
@@ -213,20 +201,11 @@ int main() {
   cars.push_back(Car(8, rand()));
   cars.push_back(Car(9, rand()));
 
-  // Create racetrack
   RaceTrack racetrack(402, std::move(cars)); // 402m is a quarter mile
 
-  // Figure out the timer tick interval
-  // This can be anything you want, yet the speed of the cars will remain constant
-  // However, if its too slow it wont feel like an animation
-  // and if its too fast, the terminal will do silly stuff
-  // so just settle on 60 "frames per second"
   const int targetFrameRate = 60;
   const int paintIntervalInMs = 1000/targetFrameRate;
 
-  // Start a timer with the chosen time interval and callback.
-  // Using std::bind in the second argument is just a fancy way to say "hey timer, use this function for your callback"
-  // For now, just dont worry about it, I can explain in person
   Timer timer(paintIntervalInMs, std::bind(&RaceTrack::paintAtTime, racetrack, std::placeholders::_1));
   timer.startSynchronous();
 }
