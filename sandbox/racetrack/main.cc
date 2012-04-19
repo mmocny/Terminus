@@ -1,9 +1,11 @@
-#include <iostream>
-#include <vector>
-#include <string>
-#include <random>
 #include <algorithm>
+#include <cstdlib>
+#include <ctime>
 #include <functional>
+#include <iostream>
+#include <random>
+#include <string>
+#include <vector>
 
 #if defined(__clang__)
 #include <unistd.h>
@@ -187,8 +189,15 @@ void Timer::startSynchronous()
 
 ////////////////////////////////////////////////////////////////////////////////
 
+int getrandom(int min, int max)
+{
+  //auto rand = std::bind(std::uniform_int_distribution<int>(2, 10), std::mt19937(std::random_device()()));
+  return int(((double(rand()) / RAND_MAX) * (max-min))+min);
+}
+
 int main() {
-  auto rand = std::bind(std::uniform_int_distribution<int>(2, 10), std::mt19937(std::random_device()()));
+  std::srand(time(NULL));
+  auto rand = std::bind(&getrandom, 2, 10);
 
   std::vector<Car> cars;
   cars.push_back(Car(1, rand()));
@@ -203,7 +212,7 @@ int main() {
 
   RaceTrack racetrack(402, std::move(cars)); // 402m is a quarter mile
 
-  const int targetFrameRate = 60;
+  const int targetFrameRate = 10;
   const int paintIntervalInMs = 1000/targetFrameRate;
 
   Timer timer(paintIntervalInMs, std::bind(&RaceTrack::paintAtTime, racetrack, std::placeholders::_1));
