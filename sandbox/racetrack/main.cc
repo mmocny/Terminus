@@ -109,7 +109,7 @@ int Car::speedInKmphAtTimeInMs(int ms) const
 
 int Car::distanceTraveledAtTimeInMs(int ms) const
 {
-  return 0;
+  return ((speedInKmph_ * ms) / 3600);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -132,12 +132,14 @@ RaceTrack::RaceTrack(int distance, std::vector<Car> cars)
 }
 
 bool RaceTrack::paintAtTime(int ms) {
-  const int racetrackWidth = 60;
-  int winner = -1;
+  static const int racetrackWidth = 60;
 
   std::cout << "Time: " << ms/1000 << std::endl;
   std::cout << std::string(racetrackWidth, '*') << std::endl;
 
+  bool raceComplete = false;
+  //for (auto it = cars_.begin(); it != cars_.end(); ++it) {
+  //  Car const& car = *it;
   for (Car const& car : cars_) {
     int speed = car.speedInKmphAtTimeInMs(ms);
     int distance = car.distanceTraveledAtTimeInMs(ms);
@@ -145,17 +147,25 @@ bool RaceTrack::paintAtTime(int ms) {
     int leadingSpaces = (racetrackWidth - 1) * asPercent;
     int trailingSpaces = racetrackWidth - leadingSpaces - 1;
     std::cout << std::string(leadingSpaces, ' ') << " \"O=o>" << std::string(trailingSpaces, ' ') << "[" << speed << "]" << std::endl;
-
     if (distance >= distanceInM_)
-      winner = car.number();
+      raceComplete = true;
   }
-  
   std::cout << std::string(racetrackWidth, '*') << std::endl;
 
-  bool finished = winner != -1;
-  if (finished)
-    std::cout << "FINISHED! Car " << winner << " wins! Average speed: " << ((distanceInM_ * 3600) / ms) << " kmph"<< std::endl;
-  return finished;
+  if (raceComplete) {
+    int currentLeader = -1;
+    int currentLeaderDistance = -1;
+    for (Car const& car : cars_) {
+      int distance = car.distanceTraveledAtTimeInMs(ms);
+      if (distance > currentLeaderDistance) {
+        currentLeaderDistance = distance;
+        currentLeader = car.number();
+      }
+    }
+   std::cout << "FINISHED! Car " << currentLeader << " wins! Average speed: " << ((currentLeaderDistance* 3600) / ms) << " kmph"<< std::endl;
+  }
+
+  return raceComplete;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -212,7 +222,7 @@ int main() {
 
   RaceTrack racetrack(402, std::move(cars)); // 402m is a quarter mile
 
-  const int targetFrameRate = 10;
+  const int targetFrameRate = 12;
   const int paintIntervalInMs = 1000/targetFrameRate;
 
   Timer timer(paintIntervalInMs, std::bind(&RaceTrack::paintAtTime, racetrack, std::placeholders::_1));

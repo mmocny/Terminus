@@ -8,7 +8,7 @@ endif
 
 .PHONY: all
 
-all: build run
+all: build
 
 build: ${BUILD}
 
