@@ -94,22 +94,22 @@ public:
 
 private:
   int number_;
-  int acceleration_; // m/s^2
+  int speedInKmph_;
 };
 
-Car::Car(int number, int acceleration)
-  : number_(number), acceleration_(acceleration)
+Car::Car(int number, int speed)
+  : number_(number), speedInKmph_(speed)
 {
 }
 
 int Car::speedInKmphAtTimeInMs(int ms) const
 {
-  return acceleration_ * (double(ms) / 1000);
+  return speedInKmph_;
 }
 
 int Car::distanceTraveledAtTimeInMs(int ms) const
 {
-  return 0.5 * acceleration_ * std::pow(double(ms)/1000, 2);
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -197,7 +197,7 @@ int getrandom(int min, int max)
 
 int main() {
   std::srand(time(NULL));
-  auto rand = std::bind(&getrandom, 2, 10);
+  auto rand = std::bind(&getrandom, 80, 180);
 
   std::vector<Car> cars;
   cars.push_back(Car(1, rand()));
