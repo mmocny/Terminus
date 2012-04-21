@@ -76,6 +76,13 @@
 // Car class
 class Car {
 public:
+  Car(Car const&) = delete;
+  Car& operator=(Car const&) = delete;
+
+  Car(Car&&) = default;
+  Car& operator=(Car&&) = default;
+
+public:
   Car(int number, double acceleration);
 
   int number() const { return number_; }
@@ -104,7 +111,7 @@ int Car::speedInKmphAtTimeInMs(int ms) const
 int Car::distanceTraveledAtTimeInMs(int ms) const
 {
   double s = ms / 1000.0;
-  return (accelerationInMps2_ * s * s / 2);
+  return (accelerationInMps2_ * s * s / 2) + boosts_ * 50;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -123,7 +130,7 @@ private:
 };
 
 RaceTrack::RaceTrack(int distance, std::vector<Car> cars)
-  : distanceInM_(distance), cars_(cars)
+  : distanceInM_(distance), cars_(std::move(cars))
 {
 
 }
@@ -240,7 +247,7 @@ int main() {
 
   std::thread timer(
       [&] {
-        setInterval(std::bind(&RaceTrack::paintAtTime, racetrack, std::placeholders::_1), paintIntervalInMs);
+        setInterval(std::bind(&RaceTrack::paintAtTime, &racetrack, std::placeholders::_1), paintIntervalInMs);
       });
   
   getinput(racetrack);
