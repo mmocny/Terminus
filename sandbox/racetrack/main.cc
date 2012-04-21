@@ -75,7 +75,7 @@
 // Car class
 class Car {
 public:
-  Car(int number, int acceleration);
+  Car(int number, double acceleration);
 
   int number() const { return number_; }
   int speedInKmphAtTimeInMs(int ms) const;
@@ -83,22 +83,24 @@ public:
 
 private:
   int number_;
-  int speedInKmph_;
+  double accelerationInMps2_;
 };
 
-Car::Car(int number, int speed)
-  : number_(number), speedInKmph_(speed)
+Car::Car(int number, double acceleration)
+  : number_(number), accelerationInMps2_(acceleration)
 {
 }
 
 int Car::speedInKmphAtTimeInMs(int ms) const
 {
-  return speedInKmph_;
+  double s = ms / 1000.0;
+  return (accelerationInMps2_ * s * 3.6);
 }
 
 int Car::distanceTraveledAtTimeInMs(int ms) const
 {
-  return ((speedInKmph_ * ms) / 3600);
+  double s = ms / 1000.0;
+  return (accelerationInMps2_ * s * s / 2);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -181,15 +183,15 @@ void setInterval(Func func, int intervalInMs)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int getrandom(int min, int max)
+double getrandom(double min, double max)
 {
   //auto rand = std::bind(std::uniform_int_distribution<int>(2, 10), std::mt19937(std::random_device()()));
-  return int(((double(rand()) / RAND_MAX) * (max-min))+min);
+  return (((double(rand()) / RAND_MAX) * (max-min))+min);
 }
 
 int main() {
   std::srand(time(NULL));
-  auto rand = std::bind(&getrandom, 80, 180);
+  auto rand = std::bind(&getrandom, 5, 7);
 
   std::vector<Car> cars;
   cars.push_back(Car(1, rand()));
