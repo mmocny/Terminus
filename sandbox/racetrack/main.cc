@@ -5,6 +5,7 @@
 #include <iostream>
 #include <random>
 #include <string>
+#include <thread>
 #include <vector>
 
 #if defined(__clang__)
@@ -81,9 +82,12 @@ public:
   int speedInKmphAtTimeInMs(int ms) const;
   int distanceTraveledAtTimeInMs(int ms) const;
 
+  void boost() { ++boosts_; };
+
 private:
   int number_;
   double accelerationInMps2_;
+  int boosts_ = 0;
 };
 
 Car::Car(int number, double acceleration)
@@ -110,6 +114,8 @@ public:
   RaceTrack(int distance, std::vector<Car> cars);
 
   bool paintAtTime(int ms);
+
+  Car& getCar(int num);
 
 private:
   int distanceInM_;
@@ -159,6 +165,15 @@ bool RaceTrack::paintAtTime(int ms) {
   return raceComplete;
 }
 
+Car& RaceTrack::getCar(int num)
+{
+  for (Car& car : cars_) {
+    if (car.number() == num)
+      return car;
+  }
+  throw std::out_of_range("Car not found.");
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void sleep(int ms)
@@ -183,7 +198,21 @@ void setInterval(Func func, int intervalInMs)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-double getrandom(double min, double max)
+void getinput(RaceTrack& racetrack)
+{
+  int num;
+  while (std::cin >> num) {
+    try {
+      Car& car = racetrack.getCar(num);
+      car.boost();
+    } catch (std::exception const& e) {
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+int getrandom(int min, int max)
 {
   //auto rand = std::bind(std::uniform_int_distribution<int>(2, 10), std::mt19937(std::random_device()()));
   return (((double(rand()) / RAND_MAX) * (max-min))+min);
@@ -209,5 +238,12 @@ int main() {
   const int targetFrameRate = 12;
   const int paintIntervalInMs = 1000/targetFrameRate;
 
-  setInterval(std::bind(&RaceTrack::paintAtTime, racetrack, std::placeholders::_1), paintIntervalInMs);
+  std::thread timer(
+      [&] {
+        setInterval(std::bind(&RaceTrack::paintAtTime, racetrack, std::placeholders::_1), paintIntervalInMs);
+      });
+  
+  getinput(racetrack);
+
+  timer.join();
 }
