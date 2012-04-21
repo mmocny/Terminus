@@ -72,17 +72,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-void sleep(int ms)
-{
-#if defined(__clang__)
-  usleep(ms * 1000);
-#else
-  std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-#endif
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 // Car class
 class Car {
 public:
@@ -170,30 +159,23 @@ bool RaceTrack::paintAtTime(int ms) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Timer {
-public:
-  Timer(int interval, std::function<bool(int)> callback);
-
-  void startSynchronous();
-
-private:
-  int intervalInMs_;
-  std::function<bool(int)> callback_;
-};
-
-Timer::Timer(int interval, std::function<bool(int)> callback)
-  : intervalInMs_(interval), callback_(callback)
+void sleep(int ms)
 {
-
+#if defined(__clang__)
+  usleep(ms * 1000);
+#else
+  std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+#endif
 }
 
-void Timer::startSynchronous()
+template< class Func >
+void setInterval(Func func, int intervalInMs)
 {
-  for(int currentTime = 0; ; currentTime += intervalInMs_) {
-    bool done = callback_(currentTime);
+  for(int currentTime = 0; ; currentTime += intervalInMs) {
+    bool done = func(currentTime);
     if (done)
       return;
-    sleep(intervalInMs_);
+    sleep(intervalInMs);
   }
 }
 
@@ -225,6 +207,5 @@ int main() {
   const int targetFrameRate = 12;
   const int paintIntervalInMs = 1000/targetFrameRate;
 
-  Timer timer(paintIntervalInMs, std::bind(&RaceTrack::paintAtTime, racetrack, std::placeholders::_1));
-  timer.startSynchronous();
+  setInterval(std::bind(&RaceTrack::paintAtTime, racetrack, std::placeholders::_1), paintIntervalInMs);
 }
