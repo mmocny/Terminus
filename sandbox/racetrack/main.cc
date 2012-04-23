@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <cstdlib>
 #include <ctime>
 #include <functional>
@@ -7,6 +8,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <stdexcept>
 
 #if defined(__clang__)
 #include <unistd.h>
@@ -30,18 +32,8 @@
 //
 // Assignments:
 //
-// 1. There is a bug (that I know of) where we may announce the wrong winner
-//    if two cars have similar speed and both cross the finish line within the
-//    same timer tick. (decrease frame rate to 1 fps to test).
-//    Fix it!
-//    Be elegant, or I'll make you do it again :)
-//
-// 2. Replace Car speed with Car acceleration.
-//    A single constant speed is boring.  Use your old physics formulas to
-//    calculate distance using acceleration and time, and replace initial speed
-//    with initial acceleration.
 //    BONUS: AFTER you write the above, add a special conversion function which
-//    translates horsepower, gear ratio, etc into a single acceleration constant
+//    translates horsepower, etc into a single acceleration constant
 //    then create cars using car specs.  Try to be realistic!
 //
 // 3. Lets add gears and engine rpm.
@@ -87,7 +79,7 @@ public:
 
   int number() const { return number_; }
   int speedInKmphAtTimeInMs(int ms) const;
-  int distanceTraveledAtTimeInMs(int ms) const;
+  unsigned int distanceTraveledAtTimeInMs(int ms) const;
 
   void boost() { ++boosts_; };
 
@@ -100,6 +92,8 @@ private:
 Car::Car(int number, double acceleration)
   : number_(number), accelerationInMps2_(acceleration)
 {
+  assert(number > 0);
+  assert(acceleration > 0);
 }
 
 int Car::speedInKmphAtTimeInMs(int ms) const
@@ -108,7 +102,7 @@ int Car::speedInKmphAtTimeInMs(int ms) const
   return (accelerationInMps2_ * s * 3.6);
 }
 
-int Car::distanceTraveledAtTimeInMs(int ms) const
+unsigned int Car::distanceTraveledAtTimeInMs(int ms) const
 {
   double s = ms / 1000.0;
   return (accelerationInMps2_ * s * s / 2) + boosts_ * 50;
@@ -118,24 +112,24 @@ int Car::distanceTraveledAtTimeInMs(int ms) const
 
 class RaceTrack {
 public:
-  RaceTrack(int distance, std::vector<Car> cars);
+  RaceTrack(unsigned int distance, std::vector<Car> cars);
 
   bool paintAtTime(int ms);
 
   Car& getCar(int num);
 
 private:
-  int distanceInM_;
+  unsigned int distanceInM_;
   std::vector<Car> cars_;
 };
 
-RaceTrack::RaceTrack(int distance, std::vector<Car> cars)
+RaceTrack::RaceTrack(unsigned int distance, std::vector<Car> cars)
   : distanceInM_(distance), cars_(std::move(cars))
 {
-
 }
 
 bool RaceTrack::paintAtTime(int ms) {
+  ms *= 10;
   static const int racetrackWidth = 60;
 
   std::cout << "Time: " << ms/1000 << std::endl;
@@ -146,7 +140,7 @@ bool RaceTrack::paintAtTime(int ms) {
   //  Car const& car = *it;
   for (Car const& car : cars_) {
     int speed = car.speedInKmphAtTimeInMs(ms);
-    int distance = car.distanceTraveledAtTimeInMs(ms);
+    unsigned int distance = car.distanceTraveledAtTimeInMs(ms);
     float asPercent = std::min(1.0f, float(distance)/distanceInM_);
     int leadingSpaces = (racetrackWidth - 1) * asPercent;
     int trailingSpaces = racetrackWidth - leadingSpaces - 1;
@@ -157,10 +151,10 @@ bool RaceTrack::paintAtTime(int ms) {
   std::cout << std::string(racetrackWidth, '*') << std::endl;
 
   if (raceComplete) {
-    int currentLeader = -1;
-    int currentLeaderDistance = -1;
+    int currentLeader = 0;
+    unsigned int currentLeaderDistance = 0;
     for (Car const& car : cars_) {
-      int distance = car.distanceTraveledAtTimeInMs(ms);
+      unsigned int distance = car.distanceTraveledAtTimeInMs(ms);
       if (distance > currentLeaderDistance) {
         currentLeaderDistance = distance;
         currentLeader = car.number();
@@ -219,15 +213,16 @@ void getinput(RaceTrack& racetrack)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int getrandom(int min, int max)
+double getrandom(double min, double max)
 {
+  assert(min >= max);
   //auto rand = std::bind(std::uniform_int_distribution<int>(2, 10), std::mt19937(std::random_device()()));
   return (((double(rand()) / RAND_MAX) * (max-min))+min);
 }
 
 int main() {
   std::srand(time(NULL));
-  auto rand = std::bind(&getrandom, 5, 7);
+  auto rand = std::bind(&getrandom, 4, 10);
 
   std::vector<Car> cars;
   cars.push_back(Car(1, rand()));
@@ -250,7 +245,7 @@ int main() {
         setInterval(std::bind(&RaceTrack::paintAtTime, &racetrack, std::placeholders::_1), paintIntervalInMs);
       });
   
-  getinput(racetrack);
+  //getinput(racetrack);
 
   timer.join();
 }
